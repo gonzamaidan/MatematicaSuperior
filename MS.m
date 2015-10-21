@@ -93,9 +93,12 @@ popup_sel_index = get(handles.popupmenu1, 'Value');
 periodo = handles.periodo;
 switch popup_sel_index
     case 1
-        calculo(1,handles);
-        fx=handles.fx;
-        plot(fx,linspace(0,periodo));
+        myfx=guihandles(hObject);
+        myfx.fx=0;
+        guidata(hObject,myfx);
+        calculo(1,myfx,handles,hObject);
+        f=myfx.fx;
+        plot(f,linspace(0,periodo));
     case 2
         plot(sin(1:0.01:25.99));
     case 3
@@ -263,7 +266,7 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-function calculo(funcion,handles)
+function calculo(funcion,myfx,handles,hObject)
 i=1;
 syms u k;
 %periodo=input('Periodo:');
@@ -278,31 +281,38 @@ L=periodo/2;
 w=2*pi/periodo;
 x=linspace(0,periodo);
 y=(x<=(L)).*const;
+fa=0,
 fb=0;%Con este sumo todas las bn*sin(nwx)
 hold on;
 
-switch funcion
-    case 1
-        func =@(u)(u<=L);
-end
 while i<=n_cant
     %subplot(2,1,1);
-    p=@(u)func.*const.*sin(i.*u.*w); 
+     switch funcion
+        case 1
+            AN=@(u)(u<=L).*const.*cos(i.*u.*w);
+            BN=@(u)(u<=L).*const.*sin(i.*u.*w);
+            A0=@(u)(u<=L).*const;
+            
+    end
+    %p=@(u)func.*const.*sin(i.*u.*w); 
     %Al final habia que declarar todo lo que va en la integral como una
     %funcion simbolica o function handler que es lo del @
     %Y ademas cada n la calcule separada dentro del while, la n seria la i
-    bn(i)=((integral(p,0,periodo))./L); %Guardo cada bn
-    fb=fb+bn(i).*sin(i.*w.*x);%Para graficar la aproximacion
+     an(i)=((integral(AN,0,periodo))./L);
+    bn(i)=((integral(BN,0,periodo))./L); %Guardo cada bn
+    fa=fa+an(i).*cos(i.*w.*x);
+    fb=fb+bn(i).*sin(i.*w.*x);
     i=i+1;
 end
 %plot((n.*w),bn,'.');
-hold off;
+%hold off;
 %subplot(2,1,2);
-hold on;
+%hold on;
 %plot(x,y,'b');%La fx para comparar con la aprox en azul
-t=@(u)func.*const;%La fx declarada con el @ para poder integrar a0
-a0=integral(t,0,periodo)./periodo;
-handles.fx= fb+a0;
-grid;
+%t=@(u)func.*const;%La fx declarada con el @ para poder integrar a0
+a0=integral(A0,0,periodo)./periodo;
+myfx.fx= fb+a0;
+guidata(hObject,myfx);
+%grid;
 hold off;
 

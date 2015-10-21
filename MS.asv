@@ -1,8 +1,9 @@
 
 
+
 function varargout = MS(varargin)
 
-
+global fx;
 % MS MATLAB code for MS.fig
 %      MS, by itself, creates a new MS or raises the existing
 %      singleton*.
@@ -83,6 +84,7 @@ varargout{1} = handles.output;
 
 % --- Executes on button press in pushbutton1.
 function pushbutton1_Callback(hObject, eventdata, handles)
+global fx;
 % hObject    handle to pushbutton1 (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
@@ -91,21 +93,14 @@ cla;
 
 popup_sel_index = get(handles.popupmenu1, 'Value');
 periodo = handles.periodo;
-switch popup_sel_index
-    case 1
-        myfx=guihandles(hObject);
-        myfx.fx=0;
-        guidata(hObject,myfx);
-        calculo(1,myfx,handles,hObject);
-        display(myfx.fx);
-        f=myfx.fx;
-        display(f);
-        plot(linspace(0,periodo),f);
-    case 2
-        plot(sin(1:0.01:25.99));
-    case 3
-        bar(1:.5:10);
-end
+calculo(popup_sel_index,handles,hObject);
+f=fx;
+hold on;
+plot(linspace(0,periodo),f);
+%switch popup_sel_index
+ %   case 1
+  %      plot();
+
 
 
 % --------------------------------------------------------------------
@@ -268,7 +263,10 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
-function calculo(funcion,myfx,handles,hObject)
+function calculo(funcion,handles,hObject)
+global fx;
+axes(handles.axes1);
+cla;
 i=1;
 syms u k;
 %periodo=input('Periodo:');
@@ -283,7 +281,7 @@ bn=[1:1:n_cant]; %Lo declaro para saber cuantas bn va a haber
 L=periodo/2;
 w=2*pi/periodo;
 x=linspace(0,periodo);
-y=(x<=(L)).*const;
+
 fa=0;
 fb=0;%Con este sumo todas las bn*sin(nwx)
 %hold on;
@@ -295,8 +293,25 @@ while i<=n_cant
             AN=@(u)(u<=L).*const.*cos(i.*u.*w);
             BN=@(u)(u<=L).*const.*sin(i.*u.*w);
             A0=@(u)(u<=L).*const;
+            y=(x<=(L)).*const;
+            plot(x,y,'r');
             
-    end
+         case 2
+             x=linspace(0,periodo);
+            AN=@(u)(u).*const.*cos(i.*u.*w);
+            BN=@(u)(u).*const.*sin(i.*u.*w);
+            A0=@(u)(u).*const;
+            y=x.*const;
+            plot(x,y,'r');
+         case 3
+             
+            AN=@(u)((u>=L).*(-1).*(u-periodo)+(u<L).*u).*const.*cos(i.*u.*w);
+            BN=@(u)((u>=L).*(-1).*(u-periodo)+(u<L).*u).*const.*sin(i.*u.*w);
+            A0=@(u)((u>=L).*(-1).*(u-periodo)+(u<L).*u).*const;
+            y=((x>=L).*(-1).*(x-periodo)+(x<L).*x).*const;
+            plot(x,y,'r');
+     end
+    
     %p=@(u)func.*const.*sin(i.*u.*w); 
     %Al final habia que declarar todo lo que va en la integral como una
     %funcion simbolica o function handler que es lo del @
@@ -314,11 +329,9 @@ end
 %plot(x,y,'b');%La fx para comparar con la aprox en azul
 %t=@(u)func.*const;%La fx declarada con el @ para poder integrar a0
 a0=integral(A0,0,periodo)./periodo;
-myfx.fx= fb+a0+fa;
-display(myfx.fx);
-guidata(hObject,myfx);
-handles.output=a0+fa+fb;
-guidata(hObject,handles);
-%grid;
+fx= fb+a0+fa;
+%error=abs(integral(symsum(A0-fx,1,n_cant),0,periodo));
+
+display (error);
 hold off;
 

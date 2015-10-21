@@ -93,16 +93,14 @@ cla;
 
 popup_sel_index = get(handles.popupmenu1, 'Value');
 periodo = handles.periodo;
-switch popup_sel_index
-    case 1
-        calculo(1,handles,hObject);
-        f=fx;
-        plot(linspace(0,periodo),f);
-    case 2
-        plot(sin(1:0.01:25.99));
-    case 3
-        bar(1:.5:10);
-end
+calculo(popup_sel_index,handles,hObject);
+f=fx;
+hold on;
+plot([0:0.01:periodo],f);
+%switch popup_sel_index
+ %   case 1
+  %      plot();
+
 
 
 % --------------------------------------------------------------------
@@ -267,6 +265,8 @@ end
 
 function calculo(funcion,handles,hObject)
 global fx;
+axes(handles.axes1);
+cla;
 i=1;
 syms u k;
 %periodo=input('Periodo:');
@@ -280,8 +280,8 @@ an=[1:1:n_cant];
 bn=[1:1:n_cant]; %Lo declaro para saber cuantas bn va a haber
 L=periodo/2;
 w=2*pi/periodo;
-x=linspace(0,periodo);
-y=(x<=(L)).*const;
+x=[0:0.01:periodo];
+
 fa=0;
 fb=0;%Con este sumo todas las bn*sin(nwx)
 %hold on;
@@ -293,8 +293,25 @@ while i<=n_cant
             AN=@(u)(u<=L).*const.*cos(i.*u.*w);
             BN=@(u)(u<=L).*const.*sin(i.*u.*w);
             A0=@(u)(u<=L).*const;
+            y=(x<=(L)).*const;
+            plot(x,y,'r');
             
-    end
+         case 2
+             %x=linspace(0,periodo);
+            AN=@(u)(u).*const.*cos(i.*u.*w);
+            BN=@(u)(u).*const.*sin(i.*u.*w);
+            A0=@(u)(u).*const;
+            y=x.*const;
+            plot(x,y,'r');
+         case 3
+             
+            AN=@(u)((u>=L).*(-1).*(u-periodo)+(u<L).*u).*const.*cos(i.*u.*w);
+            BN=@(u)((u>=L).*(-1).*(u-periodo)+(u<L).*u).*const.*sin(i.*u.*w);
+            A0=@(u)((u>=L).*(-1).*(u-periodo)+(u<L).*u).*const;
+            y=((x>=L).*(-1).*(x-periodo)+(x<L).*x).*const;
+            plot(x,y,'r');
+     end
+    
     %p=@(u)func.*const.*sin(i.*u.*w); 
     %Al final habia que declarar todo lo que va en la integral como una
     %funcion simbolica o function handler que es lo del @
@@ -313,5 +330,8 @@ end
 %t=@(u)func.*const;%La fx declarada con el @ para poder integrar a0
 a0=integral(A0,0,periodo)./periodo;
 fx= fb+a0+fa;
+%error=abs(integral(symsum(A0-fx,1,n_cant),0,periodo));
+error=abs(fx-y);
+display (error);
 hold off;
 

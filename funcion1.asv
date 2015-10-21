@@ -2,7 +2,7 @@ i=1;
 syms u k;
 %periodo=input('Periodo:');
 %const=input('Constante:');
-n_cant=input('N:');
+%n_cant=input('N:');
 n=[1:1:n_cant];
 bn=[1:1:n_cant]; %Lo declaro para saber cuantas bn va a haber
 L=periodo/2;

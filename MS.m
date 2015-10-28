@@ -24,16 +24,21 @@ function MS_OpeningFcn(hObject, eventdata, handles, varargin)
 handles.output = hObject;
 
 guidata(hObject, handles);
+axes(handles.axes1);
+plot(0,0);
+axes(handles.axes2);
+plot(0,0);
 
-if strcmp(get(hObject,'Visible'),'off')
-    plot(rand(5));
-end
 
 function varargout = MS_OutputFcn(hObject, eventdata, handles)
 varargout{1} = handles.output;
 
 function pushbutton1_Callback(hObject, eventdata, handles)
 global fx;
+set(handles.pushbutton1,'Enable','off');
+set(handles.pushbutton1,'ForegroundColor', [0.5 0.5 0.5]);
+set(handles.pushbutton1,'String','Creando Serie de Fourier..');
+tic
 popup_sel_index = get(handles.popupmenu1, 'Value');
 periodo = handles.periodo;
 calculo(popup_sel_index,handles,hObject);
@@ -41,6 +46,13 @@ f=fx;
 axes(handles.axes1);
 hold on;
 plot([0:0.01:periodo],f);
+toc
+title('Funciones en el tiempo');
+legend('show','Funcion real','Serie de Fourier','Location', 'Best');
+
+set(handles.pushbutton1,'String','Crear Serie de Fourier');
+set(handles.pushbutton1,'Enable','on');
+set(handles.pushbutton1,'ForegroundColor', 'black');
 
 
 % --------------------------------------------------------------------
@@ -194,12 +206,15 @@ switch funcion
     case 1
         fn1(qq)=abs(const-(FN));
         fn2(qq)=abs(0-(FN));
+        set(handles.text8,'String', '27');
     case 2
         fn1(qq)=abs(qq.*const-(FN));
         fn2(qq)=fn1;
+        set(handles.text8,'String', '14');
     case 3
         fn1(qq)=abs(qq.*const-(FN));
         fn2(qq)=abs(FN+(qq-periodo).*const);
+        set(handles.text8,'String', '3');
 end
 g1=matlabFunction(fn1);
 fn1=integral(g1,0,L);
@@ -213,10 +228,11 @@ cla;
 hold on;
 plot(n, an,'b-o');
 plot(n, bn,'r-*');
-title('Coeficientes')
+title('Coeficientes');
 xlabel('N');
 ylabel('An, Bn');
-legend('show','An','Bn');
+legend('show','An','Bn','Location', 'Best');
+
 
 
 

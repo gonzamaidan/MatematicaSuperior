@@ -38,15 +38,13 @@ global fx;
 set(handles.pushbutton1,'Enable','off');
 set(handles.pushbutton1,'ForegroundColor', [0.5 0.5 0.5]);
 set(handles.pushbutton1,'String','Creando Serie de Fourier..');
-tic
 popup_sel_index = get(handles.popupmenu1, 'Value');
 periodo = handles.periodo;
 calculo(popup_sel_index,handles,hObject);
 f=fx;
 axes(handles.axes1);
 hold on;
-plot([0:0.01:periodo],f);
-toc
+plot(linspace(0,periodo,300),f);
 title('Funciones en el tiempo');
 legend('show','Funcion real','Serie de Fourier','Location', 'Best');
 
@@ -92,12 +90,16 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
      set(hObject,'BackgroundColor','white');
 end
 
-set(hObject, 'String', {'f(x)= 1', 'f(x)= x','f(x)=x periodo'});
+set(hObject, 'String', {'Func. onda cuadrada', 'Func. onda de sierra','Func. onda triangular'});
 
 
 
 function edit2_Callback(hObject, eventdata, handles)
 periodo=str2double(get(hObject,'String'));
+if periodo<=0 || isnan(periodo)
+    periodo=1;
+    set(hObject,'String',num2str(periodo));
+end
 handles.periodo = periodo;
 guidata(hObject,handles);
 
@@ -113,6 +115,10 @@ end
 
 function edit3_Callback(hObject, eventdata, handles)
 constante=str2double(get(hObject,'String'));
+if isnan(constante)
+    constante=1;
+    set(hObject,'String',num2str(constante));
+end
 handles.constante = constante;
 guidata(hObject,handles);
 
@@ -125,7 +131,14 @@ end
 
 
 function edit4_Callback(hObject, eventdata, handles)
-cant_n=str2double(get(hObject,'String'));
+cant_n=floor(str2double(get(hObject,'String')));
+if cant_n>50
+    cant_n=50;
+end
+if cant_n<1 || isnan(cant_n)
+    cant_n=1;
+end
+set(hObject,'String',num2str(cant_n));
 handles.cant_n =cant_n;
 guidata(hObject,handles);
 
@@ -146,93 +159,126 @@ periodo= handles.periodo;
 const= handles.constante;
 n=[1:1:n_cant];
 an=[1:1:n_cant];
-bn=[1:1:n_cant]; %Lo declaro para saber cuantas bn va a haber
+bn=[1:1:n_cant];
 L=periodo/2;
 w=2*pi/periodo;
-x=[0:0.01:periodo];
-
-%fa=0;
-%fb=0;%Con este sumo todas las bn*sin(nwx)
-%hold on;
+x=linspace(0,periodo,300);
 FN=0;
 FAN(aa,nn,qq)=(aa.*cos(nn.*qq.*w));
 FBN(bb,nn,qq)=(bb.*sin(nn.*qq.*w));
+f_error=0;
 while i<=n_cant
     switch funcion
         case 1
             AN=@(u)(u<=L).*const.*cos(i.*u.*w);
             BN=@(u)(u<=L).*const.*sin(i.*u.*w);
             A0=@(u)(u<=L).*const;
-            y=(x<=(L)).*const;
-            plot(x,y,'r');
-
-            
+            y=(x<=(L)).*const;          
          case 2
             AN=@(u) u.*const.*cos(i.*u.*w);
             BN=@(u) u.*const.*sin(i.*u.*w);
             A0=@(u) u.*const;
-            y=x.*const;
-            plot(x,y,'r');
+            y=x.*const;           
          case 3             
             AN=@(u)((u>=L).*(-1).*(u-periodo)+(u<L).*u).*const.*cos(i.*u.*w);
             BN=@(u)((u>=L).*(-1).*(u-periodo)+(u<L).*u).*const.*sin(i.*u.*w);
             A0=@(u)((u>=L).*(-1).*(u-periodo)+(u<L).*u).*const;
-            y=((x>=L).*(-1).*(x-periodo)+(x<L).*x).*const;
-            plot(x,y,'r');
-     end
-    
-    %Al final habia que declarar todo lo que va en la integral como una
-    %funcion simbolica o function handler que es lo del @
-    %Y ademas cada n la calcule separada dentro del while, la n seria la i
+            y=((x>=L).*(-1).*(x-periodo)+(x<L).*x).*const;            
+    end    
     if funcion==3
         an(i)=((integral(AN,0,periodo))./L);
         bn(i)=0;
     else
         an(i)=0;
-        bn(i)=((integral(BN,0,periodo))./L); %Guardo cada bn
+        bn(i)=((integral(BN,0,periodo))./L);
     end
-    %fa=fa+an(i).*cos(i.*w.*x);
-    %fb=fb+bn(i).*sin(i.*w.*x);
     FN=FN+FAN(an(i),i,qq)+FBN(bn(i),i,qq);
-    %fn=@(u) fn+an(i).*cos(i.*w.*u)+bn(i).*sin(i.*w.*u);
+    if i==1
+        a0=integral(A0,0,periodo)./periodo;
+        FA0=abs(integral(A0,0,periodo));  
+        FN=FN+a0;
+    end
+
+    switch funcion
+        case 1
+            fn1(qq)=abs(const-(FN));
+            fn2(qq)=abs(0-(FN));    
+        case 2
+            fn1(qq)=abs(qq.*const-(FN));
+            fn2(qq)=fn1;
+        case 3
+            fn1(qq)=abs(qq.*const-(FN));
+            fn2(qq)=abs(FN+(qq-periodo).*const);
+    end
+    g1=matlabFunction(fn1);
+    Fn1=integral(g1,0,L);
+    g1=matlabFunction(fn2); 
+    Fn2=integral(g1,L,periodo);
+    errorA=Fn2+Fn1;
+    errorR=100*(errorA./FA0);
+    if errorR<= 5 &&f_error == 0
+        set(handles.text8,'String', num2str(i));
+        f_error=1;
+    end
     i=i+1;
 end
-a0=integral(A0,0,periodo)./periodo;
-FA0=abs(integral(A0,0,periodo));
-%fx= fb+a0+fa;
-fx= a0+subs(FN,qq,x);
-FN=FN+a0;
-switch funcion
-    case 1
-        fn1(qq)=abs(const-(FN));
-        fn2(qq)=abs(0-(FN));
-        set(handles.text8,'String', '27');
-    case 2
-        fn1(qq)=abs(qq.*const-(FN));
-        fn2(qq)=fn1;
-        set(handles.text8,'String', '14');
-    case 3
-        fn1(qq)=abs(qq.*const-(FN));
-        fn2(qq)=abs(FN+(qq-periodo).*const);
-        set(handles.text8,'String', '3');
-end
-g1=matlabFunction(fn1);
-fn1=integral(g1,0,L);
-g1=matlabFunction(fn2);
-fn2=integral(g1,L,periodo);
-errorA=fn2+fn1;
-errorR=100*(errorA./FA0);
+plot(x,y,'r');
+fx= subs(FN,qq,x);
 set(handles.text5,'String',strcat('%',num2str(errorR)));
 axes(handles.axes2);
 cla;
 hold on;
+plot(0,a0,'g+')
 plot(n, an,'b-o');
 plot(n, bn,'r-*');
 title('Coeficientes');
 xlabel('N');
 ylabel('An, Bn');
-legend('show','An','Bn','Location', 'Best');
-
+legend('show','A0','An','Bn','Location', 'Best');
+while f_error==0
+    switch funcion
+        case 1
+            AN=@(u)(u<=L).*const.*cos(i.*u.*w);
+            BN=@(u)(u<=L).*const.*sin(i.*u.*w);
+         case 2
+            AN=@(u) u.*const.*cos(i.*u.*w);
+            BN=@(u) u.*const.*sin(i.*u.*w);
+         case 3             
+            AN=@(u)((u>=L).*(-1).*(u-periodo)+(u<L).*u).*const.*cos(i.*u.*w);
+            BN=@(u)((u>=L).*(-1).*(u-periodo)+(u<L).*u).*const.*sin(i.*u.*w);            
+    end
+    
+    if funcion==3
+        an(i)=((integral(AN,0,periodo))./L);
+        bn(i)=0;
+    else
+        an(i)=0;
+        bn(i)=((integral(BN,0,periodo))./L);
+    end
+    FN=FN+FAN(an(i),i,qq)+FBN(bn(i),i,qq);
+    switch funcion
+        case 1
+            fn1(qq)=abs(const-(FN));
+            fn2(qq)=abs(0-(FN));
+        case 2
+            fn1(qq)=abs(qq.*const-(FN));
+            fn2(qq)=fn1;
+        case 3
+            fn1(qq)=abs(qq.*const-(FN));
+            fn2(qq)=abs(FN+(qq-periodo).*const);
+    end
+    g1=matlabFunction(fn1);
+    Fn1=integral(g1,0,L);
+    g1=matlabFunction(fn2); 
+    Fn2=integral(g1,L,periodo);
+    errorA=Fn2+Fn1;
+    errorR=100*(errorA./FA0);
+    if errorR<= 5 &&f_error == 0
+        set(handles.text8,'String', num2str(i));
+        f_error=1;
+    end
+    i=i+1;
+end
 
 
 
